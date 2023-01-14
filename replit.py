@@ -1,6 +1,5 @@
-from flask import Flask, request
-import subprocess
-import json
+from flask import Flask, request, jsonify
+import subprocess, json
 
 
 app = Flask(__name__)
@@ -19,22 +18,20 @@ def run_code():
 
     try:
 
-        if language == 'python':
-            result = subprocess.run(
-                ['python', '-c', code], capture_output=True, text=True)
+        if language == "python":
+            result = subprocess.run(['python', '-c', code], capture_output=True, text=True)
+            response = {'output': result.stdout, 'error': result.stderr}
 
-        elif language == 'go':
-            with open('main.go', 'w') as f:
-                f.write(code)
-            result = subprocess.run(
-                ['go', 'run', 'main.go'], capture_output=True, text=True)
-                
-        response = {'output': result.stdout, 'error': result.stderr}
-        return json.dumps(response), 200
+        elif language == "go":
+            result = subprocess.run(['go', 'run', code], capture_output=True, text=True)
+            response = {'output': result.stdout, 'error': result.stderr}
+
+        else:
+            response = {'error': 'unsupported language'}
+        return jsonify(response), 200
 
     except subprocess.CalledProcessError as e:
-        return json.dumps({'error': str(e)}), 500
-
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, port=5004)
